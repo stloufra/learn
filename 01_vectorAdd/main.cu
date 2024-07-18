@@ -5,12 +5,12 @@
 //Threads       - executes the instruction
 //Warps         - SIMT (lowest schedulable entity) size 32
 //Thread blocks - lowest programmable entity
-//              - assignet to shader core
+//              - assigned to shader core
 //Grids         - mapping to gpu
 
-using realType = int;
+using realType = float;
 
-void vecInit(realType *a, int n) {
+void vecInit(realType *a, int n){
 
     for (int i = 0; i < n; i++) {
         a[i] = i;
@@ -26,6 +26,9 @@ void vectorAddHost(realType *a, realType *b, realType *c, int N) {
 
 void checkIfSame(realType *a, realType *b, realType *c, int N){
     for (int i = 0; i < N; i++) {
+        if(N < 11) {
+            std::cout << "c[" << i << "]= " << a[i] << std::endl;
+        }
         assert(c[i] == a[i] + b[i]);
     }
 
@@ -34,7 +37,7 @@ void checkIfSame(realType *a, realType *b, realType *c, int N){
 
 __global__ void vectorAdd(realType *a, realType *b, realType *c, int N) {
 
-    int tid = (blockIdx.x * blockDim.x) + blockIdx.x;
+    int tid = (blockIdx.x * blockDim.x) + threadIdx.x;
 
     if (tid < N) {
         c[tid] = a[tid] + b[tid];
@@ -45,17 +48,19 @@ __global__ void vectorAdd(realType *a, realType *b, realType *c, int N) {
 int main() {
 
 
-    int N = 1<< 16;
+    int N = 1 << 16;
 
     realType *h_a, *h_b, *h_c;
     realType *d_a, *d_b, *d_c;
 
     size_t bytes = sizeof(realType) * N;
 
-    printf("Our size in bites %d \n", bytes);
+    int bytesPrint = (int)bytes;
+
+    printf("Our total size in bites %d \n", bytesPrint);
 
     realType NUM_THREADS = 256;
-    realType NUM_BLOCKS = (realType) ceil(N / NUM_THREADS); // multiple of 32
+    realType NUM_BLOCKS = (int) ceil(N / NUM_THREADS); // multiple of 32
 
     //-----------------
     // managed memory
@@ -83,6 +88,14 @@ int main() {
 
     checkIfSame( h_a, h_b, h_c, N);
 
+    free(h_a);
+    free(h_b);
+    free(h_c);
+
+    cudaFree(d_a);
+    cudaFree(d_b);
+    cudaFree(d_c);
+
     //-----------------
     // unified memory
     //----------------
@@ -109,6 +122,13 @@ int main() {
     cudaMemPrefetchAsync(u_c, bytes, cudaCpuDeviceId);
 
     checkIfSame( h_a, h_b, h_c, N);
+
+    cudaDeviceSynchronize();
+
+
+    cudaFree(u_a);
+    cudaFree(u_b);
+    cudaFree(u_c);
 
     return 0;
 }
