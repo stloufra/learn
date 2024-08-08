@@ -1,13 +1,12 @@
 CUDA_CXX := nvcc
 
-CUDA_CXXFLAGS := -std=c++17 --expt-relaxed-constexpr --expt-extended-lambda
+CUDA_CXXFLAGS := -std=c++17
 CUDA_CXXFLAGS += -DHAVE_CUDA -DNDEBUG
-CUDA_CXXFLAGS +=  -lineinfo -use_fast_math -diag-suppress 20012
+CUDA_CXXFLAGS +=  -use_fast_math -O3
 
 CUDA_PATH ?= $(abspath $(dir $(shell command -v nvcc))/..)
 
-$(info Detected CUDA_PATH: $(CUDA_PATH))
-
+#$(info Detected CUDA_PATH: $(CUDA_PATH))
 
 # flags for linking CUDA with the host compiler
 CUDA_LDFLAGS := -L $(CUDA_PATH)/lib64
